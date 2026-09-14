@@ -83,23 +83,33 @@ class SerialReaderApp(ctk.CTk):
         self.extraction_frame.grid(row=0, column=0, pady=(0, 15), sticky="ew")
         self.extraction_frame.grid_columnconfigure(2, weight=1)
         
-        # Controles de extracción
+        # Controles de extracción (Estilo Adempiere)
         controls_frame = ctk.CTkFrame(self.extraction_frame, fg_color="transparent")
-        controls_frame.grid(row=0, column=0, padx=15, pady=15, sticky="w")
+        controls_frame.grid(row=0, column=0, padx=15, pady=10, sticky="w")
         
-        ctk.CTkLabel(controls_frame, text="Inicio de corte (ej: +):").grid(row=0, column=0, sticky="w", padx=5)
-        self.char_start = ctk.CTkEntry(controls_frame, width=50)
-        self.char_start.insert(0, "+")
-        self.char_start.grid(row=0, column=1, padx=5)
+        ctk.CTkLabel(controls_frame, text="Char Inicio (ASCII):").grid(row=0, column=0, sticky="w", padx=5)
+        self.char_start_ascii = ctk.CTkEntry(controls_frame, width=50)
+        self.char_start_ascii.insert(0, "83")
+        self.char_start_ascii.grid(row=0, column=1, padx=5)
         
-        ctk.CTkLabel(controls_frame, text="Fin de corte (ej: k):").grid(row=1, column=0, sticky="w", padx=5, pady=10)
-        self.char_end = ctk.CTkEntry(controls_frame, width=50)
-        self.char_end.insert(0, "k")
-        self.char_end.grid(row=1, column=1, padx=5, pady=10)
+        ctk.CTkLabel(controls_frame, text="Longitud Trama:").grid(row=1, column=0, sticky="w", padx=5, pady=5)
+        self.frame_length = ctk.CTkEntry(controls_frame, width=50)
+        self.frame_length.insert(0, "16")
+        self.frame_length.grid(row=1, column=1, padx=5, pady=5)
+        
+        ctk.CTkLabel(controls_frame, text="Corte Inicio (Pos):").grid(row=0, column=2, sticky="w", padx=(15, 5))
+        self.cut_start = ctk.CTkEntry(controls_frame, width=50)
+        self.cut_start.insert(0, "8")
+        self.cut_start.grid(row=0, column=3, padx=5)
+        
+        ctk.CTkLabel(controls_frame, text="Corte Fin (Pos):").grid(row=1, column=2, sticky="w", padx=(15, 5), pady=5)
+        self.cut_end = ctk.CTkEntry(controls_frame, width=50)
+        self.cut_end.insert(0, "14")
+        self.cut_end.grid(row=1, column=3, padx=5, pady=5)
         
         # Mostrar valor extraído grande
         self.extracted_value_label = ctk.CTkLabel(self.extraction_frame, text="--", font=ctk.CTkFont(size=60, weight="bold"), text_color="#F1C40F")
-        self.extracted_value_label.grid(row=0, column=2, padx=20, pady=15, sticky="e")
+        self.extracted_value_label.grid(row=0, column=2, padx=20, pady=10, sticky="e")
         
         # Panel Medio: Configuraciones extra (Paridad, Flujo)
         self.top_settings = ctk.CTkFrame(self.main_view, height=50)
@@ -107,12 +117,12 @@ class SerialReaderApp(ctk.CTk):
         
         ctk.CTkLabel(self.top_settings, text="Paridad:", font=ctk.CTkFont(weight="bold")).pack(side="left", padx=(15, 5), pady=10)
         self.parity_cb = ctk.CTkComboBox(self.top_settings, width=150, values=["Ninguna (0)", "Impar (1)", "Par (2)", "Marca (3)", "Espacio (4)"])
-        self.parity_cb.set("Ninguna (0)")
+        self.parity_cb.set("Par (2)")
         self.parity_cb.pack(side="left", padx=5, pady=10)
         
         ctk.CTkLabel(self.top_settings, text="Control Flujo:", font=ctk.CTkFont(weight="bold")).pack(side="left", padx=(25, 5), pady=10)
         self.flow_cb = ctk.CTkComboBox(self.top_settings, width=150, values=["Ninguno (0)", "RTS/CTS (1)", "XON/XOFF (4)"])
-        self.flow_cb.set("Ninguno (0)")
+        self.flow_cb.set("RTS/CTS (1)")
         self.flow_cb.pack(side="left", padx=5, pady=10)
         
         # Terminal view (Raw Data)
@@ -187,30 +197,46 @@ class SerialReaderApp(ctk.CTk):
             messagebox.showerror("Error de Conexión", str(e))
 
     def process_buffer(self, text):
-        c_start = self.char_start.get()
-        c_end = self.char_end.get()
-        
-        if c_start and c_end:
-            start_idx = text.find(c_start)
-            end_idx = text.find(c_end, start_idx + 1) if start_idx != -1 else text.find(c_end)
+        try:
+            start_idx = int(self.cut_start.get())
+            end_idx = int(self.cut_end.get())
             
-            if start_idx != -1 and end_idx != -1 and start_idx < end_idx:
-                # Extraemos el valor entre el caracter de inicio (exclusivo) y fin (exclusivo)
-                # Opcionalmente, si quieren incluir el signo, extraemos desde start_idx
-                # La lógica clásica es tomar todo después del + y antes de la k, y quitar espacios.
-                value = text[start_idx+1:end_idx].strip()
+            # Cortamos directamente usando los índices de Adempiere
+            if len(text) >= end_idx:
+                value = text[start_idx:end_idx].strip()
                 self.extracted_value_label.configure(text=value)
+        except ValueError:
+            pass
 
     def on_data_received(self, char_val, bit):
         self.after(0, self.log, f"=>>[{char_val}|{bit}]")
         
-        # Lógica de acumulación en buffer para extraer el valor
-        self.buffer += char_val
-        # Si recibimos Enter (13 o 10), procesamos la linea
-        if bit == 10 or bit == 13:
-            if len(self.buffer.strip()) > 0:
-                self.after(0, self.process_buffer, self.buffer)
+        try:
+            start_char_ascii = int(self.char_start_ascii.get())
+        except ValueError:
+            start_char_ascii = -1
+            
+        try:
+            expected_length = int(self.frame_length.get())
+        except ValueError:
+            expected_length = 0
+            
+        # Lógica de tramas Adempiere: reiniciar el buffer si llega el ASCII de inicio
+        if bit == start_char_ascii:
+            self.buffer = char_val
+        else:
+            self.buffer += char_val
+            
+        # Evaluar si la trama alcanzó la longitud deseada
+        if expected_length > 0 and len(self.buffer) == expected_length:
+            self.after(0, self.process_buffer, self.buffer)
             self.buffer = ""
+        # Respaldo: si el Caracter Fin no es 0 (ej. Salto de Línea)
+        elif bit == 10 or bit == 13:
+            if len(self.buffer.strip()) > 0 and expected_length == 0:
+                self.after(0, self.process_buffer, self.buffer)
+            if expected_length == 0:
+                self.buffer = ""
 
     def on_error(self, error_msg):
         self.after(0, self.log, f"Error leyendo: {error_msg}")
