@@ -117,8 +117,8 @@ class SerialReaderApp(ctk.CTk):
         self.parity_cb.pack(side="left", padx=5, pady=10)
         
         ctk.CTkLabel(self.top_settings, text="Control Flujo:", font=ctk.CTkFont(weight="bold")).pack(side="left", padx=(25, 5), pady=10)
-        self.flow_cb = ctk.CTkComboBox(self.top_settings, width=150, values=["Ninguno (0)", "RTS/CTS (1)", "XON/XOFF (4)"])
-        self.flow_cb.set("RTS/CTS (1)")
+        self.flow_cb = ctk.CTkComboBox(self.top_settings, width=150, values=["None", "RTSCTS IN", "RTSCTS OUT", "XON/XOFF IN", "XON/XOFF OUT"])
+        self.flow_cb.set("RTSCTS IN")
         self.flow_cb.pack(side="left", padx=5, pady=10)
         
         # Terminal view (Raw Data)
@@ -162,8 +162,8 @@ class SerialReaderApp(ctk.CTk):
         else: parity = serial.PARITY_SPACE
         
         flow_str = self.flow_cb.get()
-        xonxoff = "4" in flow_str
-        rtscts = "1" in flow_str
+        xonxoff = "XON/XOFF" in flow_str
+        rtscts = "RTSCTS" in flow_str
         
         try:
             self.buffer = ""
