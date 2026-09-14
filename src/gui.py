@@ -248,7 +248,7 @@ class SerialReaderApp(ctk.CTk):
             
             # Cortamos directamente usando los índices de Adempiere
             if len(text) >= end_idx:
-                value = text[start_idx:end_idx].strip()
+                value = text[start_idx:end_idx].replace(" ", "")
                 self.extracted_value_label.configure(text=value)
         except ValueError:
             pass
@@ -266,29 +266,28 @@ class SerialReaderApp(ctk.CTk):
         except ValueError:
             expected_length = 0
             
-        # Lógica de tramas Adempiere: reiniciar el buffer si llega el ASCII de inicio
-        # Pero solo si NO estamos en modo auto-deteccion (es decir, ya hay un valor configurado)
-        if start_char_ascii != -1 and bit == start_char_ascii:
-            self.buffer = char_val
-        else:
-            self.buffer += char_val
+        # Lógica de tramas Adempiere: reiniciar el buffer solo si está vacío
+        if len(self.buffer) == 0 and start_char_ascii != -1:
+            if bit == start_char_ascii:
+                self.buffer = char_val
+            return # Si el buffer está vacío y no es el caracter de inicio, lo ignoramos
+            
+        self.buffer += char_val
             
         # Evaluar si la trama alcanzó la longitud deseada
         if expected_length > 0 and len(self.buffer) == expected_length:
             self.after(0, self.process_buffer, self.buffer)
             self.buffer = ""
             
-        # Modo de auto-detección y Respaldo de salto de linea
+        # Respaldo: Si llega salto de línea, procesamos lo que tengamos y limpiamos
         elif bit == 10 or bit == 13:
             if len(self.buffer.strip()) > 0:
                 # Si los campos están vacios, autocalcular magia!
                 if self.char_start_ascii.get() == "" and self.frame_length.get() == "":
                     self.after(0, self.auto_fill_config, self.buffer)
-                elif expected_length == 0:
+                else:
                     self.after(0, self.process_buffer, self.buffer)
-            
-            if expected_length == 0:
-                self.buffer = ""
+            self.buffer = ""
 
     def on_error(self, error_msg):
         self.after(0, self.log, f"Error leyendo: {error_msg}")
