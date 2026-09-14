@@ -89,22 +89,18 @@ class SerialReaderApp(ctk.CTk):
         
         ctk.CTkLabel(controls_frame, text="Char Inicio (ASCII):").grid(row=0, column=0, sticky="w", padx=5)
         self.char_start_ascii = ctk.CTkEntry(controls_frame, width=50)
-        self.char_start_ascii.insert(0, "83")
         self.char_start_ascii.grid(row=0, column=1, padx=5)
         
         ctk.CTkLabel(controls_frame, text="Longitud Trama:").grid(row=1, column=0, sticky="w", padx=5, pady=5)
         self.frame_length = ctk.CTkEntry(controls_frame, width=50)
-        self.frame_length.insert(0, "16")
         self.frame_length.grid(row=1, column=1, padx=5, pady=5)
         
         ctk.CTkLabel(controls_frame, text="Corte Inicio (Pos):").grid(row=0, column=2, sticky="w", padx=(15, 5))
         self.cut_start = ctk.CTkEntry(controls_frame, width=50)
-        self.cut_start.insert(0, "8")
         self.cut_start.grid(row=0, column=3, padx=5)
         
         ctk.CTkLabel(controls_frame, text="Corte Fin (Pos):").grid(row=1, column=2, sticky="w", padx=(15, 5), pady=5)
         self.cut_end = ctk.CTkEntry(controls_frame, width=50)
-        self.cut_end.insert(0, "14")
         self.cut_end.grid(row=1, column=3, padx=5, pady=5)
         
         # Mostrar valor extraído grande
