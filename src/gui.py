@@ -192,6 +192,36 @@ class SerialReaderApp(ctk.CTk):
         except Exception as e:
             messagebox.showerror("Error de Conexión", str(e))
 
+    def auto_fill_config(self, text):
+        import re
+        # Limpiamos saltos de linea para no contarlos en la trama util
+        clean_text = text.replace('\r', '').replace('\n', '')
+        if not clean_text:
+            return
+            
+        # 1. Caracter de inicio (ASCII del primer caracter)
+        start_ascii = ord(clean_text[0])
+        self.char_start_ascii.delete(0, "end")
+        self.char_start_ascii.insert(0, str(start_ascii))
+        
+        # 2. Longitud de la trama
+        frame_len = len(clean_text)
+        self.frame_length.delete(0, "end")
+        self.frame_length.insert(0, str(frame_len))
+        
+        # 3. Buscar la posicion de los numeros (Corte inicio y fin)
+        # Busca un signo opcional, espacios opcionales, y numeros
+        match = re.search(r'[-+]?\s*\d+\.?\d*', clean_text)
+        if match:
+            self.cut_start.delete(0, "end")
+            self.cut_start.insert(0, str(match.start()))
+            
+            self.cut_end.delete(0, "end")
+            self.cut_end.insert(0, str(match.end()))
+            
+        # Extraemos inmediatamente para mostrar el resultado del auto-calculo
+        self.process_buffer(clean_text)
+
     def process_buffer(self, text):
         try:
             start_idx = int(self.cut_start.get())
@@ -218,7 +248,8 @@ class SerialReaderApp(ctk.CTk):
             expected_length = 0
             
         # Lógica de tramas Adempiere: reiniciar el buffer si llega el ASCII de inicio
-        if bit == start_char_ascii:
+        # Pero solo si NO estamos en modo auto-deteccion (es decir, ya hay un valor configurado)
+        if start_char_ascii != -1 and bit == start_char_ascii:
             self.buffer = char_val
         else:
             self.buffer += char_val
@@ -227,10 +258,16 @@ class SerialReaderApp(ctk.CTk):
         if expected_length > 0 and len(self.buffer) == expected_length:
             self.after(0, self.process_buffer, self.buffer)
             self.buffer = ""
-        # Respaldo: si el Caracter Fin no es 0 (ej. Salto de Línea)
+            
+        # Modo de auto-detección y Respaldo de salto de linea
         elif bit == 10 or bit == 13:
-            if len(self.buffer.strip()) > 0 and expected_length == 0:
-                self.after(0, self.process_buffer, self.buffer)
+            if len(self.buffer.strip()) > 0:
+                # Si los campos están vacios, autocalcular magia!
+                if self.char_start_ascii.get() == "" and self.frame_length.get() == "":
+                    self.after(0, self.auto_fill_config, self.buffer)
+                elif expected_length == 0:
+                    self.after(0, self.process_buffer, self.buffer)
+            
             if expected_length == 0:
                 self.buffer = ""
 
