@@ -70,8 +70,15 @@ class SerialReaderApp(ctk.CTk):
         self.connect_btn.grid(row=11, column=0, padx=20, pady=(10, 5), sticky="ew")
         
         self.disconnect_btn = ctk.CTkButton(self.sidebar, text="DESCONECTAR", fg_color="#C0392B", hover_color="#E74C3C", font=ctk.CTkFont(weight="bold"), command=self.disconnect, state="disabled")
-        self.disconnect_btn.grid(row=12, column=0, padx=20, pady=(5, 20), sticky="ew")
+        self.disconnect_btn.grid(row=12, column=0, padx=20, pady=(5, 10), sticky="ew")
         
+        self.github_btn = ctk.CTkButton(self.sidebar, text="💻 Developed by jesusalbujas", fg_color="transparent", hover_color="#34495E", text_color="#3498DB", font=ctk.CTkFont(size=12, underline=True), command=self.open_github)
+        self.github_btn.grid(row=13, column=0, padx=20, pady=(10, 20), sticky="s")
+        
+    def open_github(self):
+        import webbrowser
+        webbrowser.open("https://github.com/jesusalbujas/serialport")
+
     def create_main_view(self):
         self.main_view = ctk.CTkFrame(self, corner_radius=10, fg_color="transparent")
         self.main_view.grid(row=0, column=1, padx=20, pady=20, sticky="nsew")
