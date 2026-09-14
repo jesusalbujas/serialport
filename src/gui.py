@@ -75,7 +75,7 @@ class SerialReaderApp(ctk.CTk):
     def create_main_view(self):
         self.main_view = ctk.CTkFrame(self, corner_radius=10, fg_color="transparent")
         self.main_view.grid(row=0, column=1, padx=20, pady=20, sticky="nsew")
-        self.main_view.grid_rowconfigure(2, weight=1) # El textbox ocupa el resto
+        self.main_view.grid_rowconfigure(3, weight=1) # El textbox ocupa el resto
         self.main_view.grid_columnconfigure(0, weight=1)
         
         # Panel Superior: Extracción de datos
@@ -121,10 +121,25 @@ class SerialReaderApp(ctk.CTk):
         self.flow_cb.set("RTSCTS IN")
         self.flow_cb.pack(side="left", padx=5, pady=10)
         
+        # Header Consola
+        self.console_header = ctk.CTkFrame(self.main_view, fg_color="transparent")
+        self.console_header.grid(row=2, column=0, sticky="ew", pady=(10, 5))
+        ctk.CTkLabel(self.console_header, text="Log de Datos:", font=ctk.CTkFont(weight="bold")).pack(side="left", padx=5)
+        
+        self.clear_btn = ctk.CTkButton(self.console_header, text="Limpiar Log", width=100, command=self.clear_log)
+        self.clear_btn.pack(side="right", padx=5)
+        
         # Terminal view (Raw Data)
         self.console = ctk.CTkTextbox(self.main_view, font=ctk.CTkFont(family="Consolas", size=14), fg_color="#1E1E1E", text_color="#00FF00")
-        self.console.grid(row=2, column=0, sticky="nsew")
+        self.console.grid(row=3, column=0, sticky="nsew")
         self.console.configure(state="disabled")
+
+    def clear_log(self):
+        self.console.configure(state="normal")
+        self.console.delete("1.0", "end")
+        self.console.configure(state="disabled")
+        self.extracted_value_label.configure(text="--")
+        self.buffer = ""
 
     def get_ports(self):
         ports = [p.device for p in serial.tools.list_ports.comports()]
