@@ -107,8 +107,8 @@ class SerialReaderApp(ctk.CTk):
         right_frame = ctk.CTkFrame(self.extraction_frame, fg_color="transparent")
         right_frame.grid(row=0, column=2, padx=20, pady=10, sticky="e")
         
-        ctk.CTkLabel(right_frame, text="VALOR EXTRAÍDO", font=ctk.CTkFont(size=16, weight="bold")).pack()
-        self.extracted_value_label = ctk.CTkLabel(right_frame, text="--", font=ctk.CTkFont(size=60, weight="bold"), text_color="#F1C40F")
+        ctk.CTkLabel(right_frame, text="VALOR EXTRAÍDO", font=ctk.CTkFont(size=24, weight="bold")).pack()
+        self.extracted_value_label = ctk.CTkLabel(right_frame, text="--", font=ctk.CTkFont(size=120, weight="bold"), text_color="#F1C40F")
         self.extracted_value_label.pack()
         
         # Panel Medio: Configuraciones extra (Paridad, Flujo)
