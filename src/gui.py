@@ -4,6 +4,9 @@ from tkinter import messagebox
 import serial
 import serial.tools.list_ports
 from serial_reader import SerialReader
+import base64
+from io import BytesIO
+from PIL import Image
 
 # Configuracion de apariencia moderna
 ctk.set_appearance_mode("Dark")
@@ -72,7 +75,11 @@ class SerialReaderApp(ctk.CTk):
         self.disconnect_btn = ctk.CTkButton(self.sidebar, text="DESCONECTAR", fg_color="#C0392B", hover_color="#E74C3C", font=ctk.CTkFont(weight="bold"), command=self.disconnect, state="disabled")
         self.disconnect_btn.grid(row=12, column=0, padx=20, pady=(5, 10), sticky="ew")
         
-        self.github_btn = ctk.CTkButton(self.sidebar, text="💻 Developed by jesusalbujas", fg_color="transparent", hover_color="#34495E", text_color="#3498DB", font=ctk.CTkFont(size=12, underline=True), command=self.open_github)
+        github_b64 = b"iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAMAAADXqc3KAAACu1BMVEUAAAAcHBwcICQcHiMbHyMaHyQbHyMbHyMbHyMbHyMbHyMcHyQcICQeHh4AAAAeHiQcHiMaHyMbHyMaHyMWISEcHiMbHiMbHyMbHyMXIyMkJCQaHiQbICMbHyMbHyMbHyMbHiMXFy4cICUaHyMbHyMbHyMaHyMcISEaHiIbHyQbHyMaHiIbHyMbHyMbHiQbHyIbHyMaHyMaICMbHyMbHyMbHyMbHyMcHiIAAAAZISEbHyMaIiIaHSQbHyQbHiQAAEAaICQrKysbICMbHyIaIyMYHiQbHiMbHyMcISEbHiIbHyIcHiQbHyMcHyIcHyMbHyIbHyMzMzMbHyMbHiQbHiQcHyMaICQbHyMcHiIbHyMbHyMbHiMbHyMbHiIbHyMcHyIVFSsXHycAAAAfHx8bHyMaICIaHyMbICMaHiIaICAcHyMbHiIcHiIaHyQYJCQcICQbHyMbHyMbHyMcHyIbGygbHyQbHyMcHyMbHiMgICAcHyIcICQdHScSJCQaHyMbHyMaHyQZHyUgICAbICQcHyIcHyMbICMcHyIbHyMbICQdHSIbHyMbHiMcHBwbICMaGiYaICMbHiQbHyMbICMbICIbHyQbHyQaGhobHyMdISUcHyMdHSMbHyIbICMbHyQcHiMbHyMaHyMaHyQcHyMbHyMgICAbHyMZHSEbICQaICIaISQbHyMdHSQbHyMbHyIaHiMbHyMbICMbICMbHyMbHyMcHyQbICMaHiIbHyQbHyMiIiIbHyMbICIbIiIbHyQcICIaHiMYICAcHCYcHCMbHyMbHyMcHCIcICMZHiMcICMbHyQbICQdHSIbHiMcHyMbHyIaHiMaICMbHyMaHyMcHyMcHyMUJycaHyMaISEaHiIcICMcHCIaHyQcHyIbHyMbHyMaHiEaHyQbHyMbGyQbICIaHyMbHiMbHyP////+rYhMAAAA53RSTlMAEkBlhaW+0eTu9WQ/EQErba7jbBdmqOinFgdNqvr8u14LN5vw75o2PLPERMfOVc/NOpH9/qLrbwMfxR5O7VQEiAbKyB0q4uYuTEtc+1tR9PYFxsmPi0/sudP52tiG3ZQMIQIZw1nLZ8EopkN3YxWBtvjzShOe5cygCFOAGg6S4aQpGDicSZDe6bo135gJXxRYXbSxaZbXCq0+8SyrYDlu23Rrr/cQtT15YUaDI9ajuLzSob/cnZl+enMPQXAm0Hg7IBske+oliTPCrHE0n5OVdldCt9WKDecnf0gtMVryhEUyvRyy1JfEOwSMAAAAmklEQVR4nGNggALR52AgyoAKniMBJGH75yjAESbu/RwN+ELEA9HFYXqAjAyELQwMOVB70OxDiIAoVywSoth1MDOgOx3mKTC5ClUiCS6BFgwMcAkeVHE+uASalnpcEhChuSDSBFm8Axpc6GEN58PMiwKJHkWOlOfPCxngepAjyxHToEAI5+7z52dQJHxhPPvnKEY5MqCYgMbACQCEVd0ovvSH6QAAAABJRU5ErkJggg=="
+        github_img_data = base64.b64decode(github_b64)
+        self.github_icon = ctk.CTkImage(light_image=Image.open(BytesIO(github_img_data)), dark_image=Image.open(BytesIO(github_img_data)), size=(20, 20))
+        
+        self.github_btn = ctk.CTkButton(self.sidebar, image=self.github_icon, text=" Developed by jesusalbujas", fg_color="transparent", hover_color="#34495E", text_color="#3498DB", font=ctk.CTkFont(size=12, underline=True), command=self.open_github)
         self.github_btn.grid(row=13, column=0, padx=20, pady=(10, 20), sticky="s")
         
     def open_github(self):
