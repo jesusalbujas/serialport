@@ -2,8 +2,7 @@ import tkinter as tk
 from tkinter import ttk, scrolledtext, messagebox
 import serial
 import serial.tools.list_ports
-import threading
-import time
+from serial_reader import SerialReader
 
 class SerialReaderApp:
     def __init__(self, root):
@@ -11,64 +10,52 @@ class SerialReaderApp:
         self.root.title("Lector de Puerto Serie")
         self.root.geometry("620x480")
         
-        self.serial_port = None
-        self.is_reading = False
-        
+        self.reader = None
         self.create_widgets()
         
     def create_widgets(self):
-        # Frame de configuracion
         config_frame = ttk.LabelFrame(self.root, text="Configuración")
         config_frame.pack(padx=10, pady=10, fill="x")
         
-        # Puerto
         ttk.Label(config_frame, text="Puerto:").grid(row=0, column=0, padx=5, pady=5, sticky="e")
         self.port_cb = ttk.Combobox(config_frame, values=[p.device for p in serial.tools.list_ports.comports()])
         self.port_cb.grid(row=0, column=1, padx=5, pady=5)
         if self.port_cb['values']:
             self.port_cb.current(0)
             
-        # Botón para refrescar puertos disponibles
         ttk.Button(config_frame, text="↻", width=3, command=self.refresh_ports).grid(row=0, column=2, padx=5, pady=5)
             
-        # Velocidad (Speed)
         ttk.Label(config_frame, text="Velocidad:").grid(row=0, column=3, padx=5, pady=5, sticky="e")
         self.speed_cb = ttk.Combobox(config_frame, values=["1200", "2400", "4800", "9600", "19200", "38400", "57600", "115200"])
         self.speed_cb.set("2400")
         self.speed_cb.grid(row=0, column=4, padx=5, pady=5)
         
-        # Bits de Datos
         ttk.Label(config_frame, text="Bits Datos:").grid(row=1, column=0, padx=5, pady=5, sticky="e")
         self.data_cb = ttk.Combobox(config_frame, values=["5", "6", "7", "8"])
         self.data_cb.set("8")
         self.data_cb.grid(row=1, column=1, padx=5, pady=5)
         
-        # Bits de Parada
         ttk.Label(config_frame, text="Bits Parada:").grid(row=1, column=3, padx=5, pady=5, sticky="e")
         self.stop_cb = ttk.Combobox(config_frame, values=["1", "1.5", "2"])
         self.stop_cb.set("1")
         self.stop_cb.grid(row=1, column=4, padx=5, pady=5)
         
-        # Paridad
         ttk.Label(config_frame, text="Paridad:").grid(row=2, column=0, padx=5, pady=5, sticky="e")
         self.parity_cb = ttk.Combobox(config_frame, values=["Ninguna (0)", "Impar (1)", "Par (2)", "Marca (3)", "Espacio (4)"])
         self.parity_cb.set("Ninguna (0)")
         self.parity_cb.grid(row=2, column=1, padx=5, pady=5)
         
-        # Control de Flujo
         ttk.Label(config_frame, text="Ctrl Flujo:").grid(row=2, column=3, padx=5, pady=5, sticky="e")
         self.flow_cb = ttk.Combobox(config_frame, values=["Ninguno (0)", "RTS/CTS (1)", "XON/XOFF (4)"])
         self.flow_cb.set("Ninguno (0)")
         self.flow_cb.grid(row=2, column=4, padx=5, pady=5)
         
-        # Botones Conectar / Desconectar
         self.connect_btn = ttk.Button(config_frame, text="Conectar", command=self.connect)
         self.connect_btn.grid(row=3, column=1, pady=10)
         
         self.disconnect_btn = ttk.Button(config_frame, text="Desconectar", command=self.disconnect, state="disabled")
         self.disconnect_btn.grid(row=3, column=3, pady=10)
         
-        # Consola de salida
         self.console = scrolledtext.ScrolledText(self.root, width=70, height=15, state='disabled', bg='black', fg='white')
         self.console.pack(padx=10, pady=10, fill="both", expand=True)
 
@@ -113,16 +100,16 @@ class SerialReaderApp:
         rtscts = "1" in flow_str
         
         try:
-            self.serial_port = serial.Serial(
+            self.reader = SerialReader(
                 port=port_name,
                 baudrate=speed,
                 bytesize=data_bits_arg,
                 parity=parity,
                 stopbits=stop_bits,
                 xonxoff=xonxoff,
-                rtscts=rtscts,
-                timeout=1
+                rtscts=rtscts
             )
+            self.reader.connect()
             self.log(f"Abriendo {port_name} ...")
             self.log("Parametrizando Puerto...")
             self.log("Puerto Listo ...")
@@ -130,38 +117,29 @@ class SerialReaderApp:
             self.connect_btn.config(state="disabled")
             self.disconnect_btn.config(state="normal")
             
-            self.is_reading = True
-            self.read_thread = threading.Thread(target=self.read_loop, daemon=True)
-            self.read_thread.start()
+            # Start background reading, triggering safe UI updates
+            self.reader.start_reading(
+                on_data_callback=self.on_data_received,
+                on_error_callback=self.on_error
+            )
             
         except Exception as e:
             messagebox.showerror("Error de Conexión", str(e))
             
     def disconnect(self):
-        self.is_reading = False
-        if self.serial_port and self.serial_port.is_open:
-            self.serial_port.close()
+        if self.reader:
+            self.reader.disconnect()
+            self.reader = None
         self.log("Cerrado")
         self.connect_btn.config(state="normal")
         self.disconnect_btn.config(state="disabled")
-        
-    def read_loop(self):
-        while self.is_reading:
-            try:
-                if self.serial_port.in_waiting > 0:
-                    time.sleep(0.2)
-                    while self.serial_port.in_waiting > 0 and self.is_reading:
-                        data = self.serial_port.read(1)
-                        if data:
-                            bit = data[0]
-                            char_val = chr(bit) if 32 <= bit <= 126 else chr(bit)
-                            self.log(f"=>>[{char_val}|{bit}]")
-                else:
-                    time.sleep(0.1)
-            except Exception as e:
-                if self.is_reading:
-                    self.log(f"Error leyendo: {e}")
-                break
+
+    def on_data_received(self, char_val, bit):
+        self.root.after(0, self.log, f"=>>[{char_val}|{bit}]")
+
+    def on_error(self, error_msg):
+        self.root.after(0, self.log, f"Error leyendo: {error_msg}")
+        self.root.after(0, self.disconnect)
 
 if __name__ == "__main__":
     root = tk.Tk()
