@@ -89,7 +89,7 @@ class SerialReaderApp(ctk.CTk):
     def create_main_view(self):
         self.main_view = ctk.CTkFrame(self, corner_radius=10, fg_color="transparent")
         self.main_view.grid(row=0, column=1, padx=20, pady=20, sticky="nsew")
-        self.main_view.grid_rowconfigure(3, weight=1) # El textbox ocupa el resto
+        self.main_view.grid_rowconfigure(3, weight=1) # Textbox occupies the remaining space
         self.main_view.grid_columnconfigure(0, weight=1)
         
         # Top Panel: Data extraction
@@ -100,7 +100,7 @@ class SerialReaderApp(ctk.CTk):
         controls_frame = ctk.CTkFrame(self.extraction_frame, fg_color="transparent")
         controls_frame.grid(row=0, column=0, padx=15, pady=10, sticky="w")
         
-        # Fila 0: Inicio
+        # Row 0: Start
         ctk.CTkLabel(controls_frame, text="Caracter Inicio (ASCII):").grid(row=0, column=0, sticky="w", padx=5, pady=3)
         self.char_start_ascii = ctk.CTkEntry(controls_frame, width=55)
         self.char_start_ascii.grid(row=0, column=1, padx=5, pady=3)
@@ -109,7 +109,7 @@ class SerialReaderApp(ctk.CTk):
         self.cut_start = ctk.CTkEntry(controls_frame, width=55)
         self.cut_start.grid(row=0, column=3, padx=5, pady=3)
         
-        # Fila 1: Fin
+        # Row 1: End
         ctk.CTkLabel(controls_frame, text="Caracter Fin (ASCII):").grid(row=1, column=0, sticky="w", padx=5, pady=3)
         self.char_end_ascii = ctk.CTkEntry(controls_frame, width=55)
         self.char_end_ascii.grid(row=1, column=1, padx=5, pady=3)
@@ -118,7 +118,7 @@ class SerialReaderApp(ctk.CTk):
         self.cut_end = ctk.CTkEntry(controls_frame, width=55)
         self.cut_end.grid(row=1, column=3, padx=5, pady=3)
         
-        # Fila 2: Longitud
+        # Row 2: Length
         ctk.CTkLabel(controls_frame, text="Longitud Trama:").grid(row=2, column=0, sticky="w", padx=5, pady=3)
         self.frame_length = ctk.CTkEntry(controls_frame, width=55)
         self.frame_length.grid(row=2, column=1, padx=5, pady=3)
@@ -246,7 +246,7 @@ class SerialReaderApp(ctk.CTk):
         if not (65 <= start_ascii <= 90 or 97 <= start_ascii <= 122 or 48 <= start_ascii <= 57):
             return
 
-        # Caracter de fin detectado
+        # Detected end character
         if end_bit is not None and end_bit in (10, 13):
             end_ascii = end_bit
         elif '\r' in text:
@@ -268,7 +268,7 @@ class SerialReaderApp(ctk.CTk):
             self.char_end_ascii.delete(0, "end")
             self.char_end_ascii.insert(0, str(end_ascii))
             
-            # Longitud total real de la trama (hasta el caracter de fin)
+            # Total actual frame length (up to end character)
             if '\r' in text or '\n' in text:
                 end_pos = text.find('\r') if '\r' in text else text.find('\n')
                 total_len = end_pos + 1
@@ -294,7 +294,7 @@ class SerialReaderApp(ctk.CTk):
             
             # Cut using indices and format cleanly
             if len(text) > start_idx:
-                # Extraemos y condensamos los espacios múltiples en uno solo
+                # Extract and collapse multiple spaces into one
                 raw_val = text[start_idx:end_idx]
                 value = " ".join(raw_val.split())
                 self.extracted_value_label.configure(text=value)
