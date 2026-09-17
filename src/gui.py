@@ -226,34 +226,38 @@ class SerialReaderApp(ctk.CTk):
             messagebox.showerror("Error de Conexión", str(e))
 
     def auto_fill_config(self, text):
-        import re
         # Limpiamos saltos de linea para no contarlos en la trama util
         clean_text = text.replace('\r', '').replace('\n', '')
-        if not clean_text:
+        
+        # 1. Ignorar tramas muy cortas (probablemente basura de conexion)
+        if len(clean_text) < 8:
             return
             
-        # 1. Caracter de inicio (ASCII del primer caracter)
+        # 2. Caracter de inicio
         start_ascii = ord(clean_text[0])
-        self.char_start_ascii.delete(0, "end")
-        self.char_start_ascii.insert(0, str(start_ascii))
-        
-        # 2. Longitud de la trama
-        frame_len = len(clean_text)
-        self.frame_length.delete(0, "end")
-        self.frame_length.insert(0, str(frame_len))
-        
+        # Si el primer caracter no es una letra normal o numero, es basura. Ignoramos.
+        if not (65 <= start_ascii <= 90 or 97 <= start_ascii <= 122 or 48 <= start_ascii <= 57):
+            return
+            
         # 3. Buscar la posicion de los numeros (Corte inicio y fin)
-        # Busca un signo opcional, espacios opcionales, y numeros
+        import re
         match = re.search(r'[-+]?\s*\d+\.?\d*', clean_text)
         if match:
+            # Si encontramos un peso válido, rellenamos la interfaz
+            self.char_start_ascii.delete(0, "end")
+            self.char_start_ascii.insert(0, str(start_ascii))
+            
+            # Dejamos la longitud en blanco, es más inteligente dejar que \n corte la trama
+            self.frame_length.delete(0, "end")
+            
             self.cut_start.delete(0, "end")
             self.cut_start.insert(0, str(match.start()))
             
             self.cut_end.delete(0, "end")
             self.cut_end.insert(0, str(match.end()))
             
-        # Extraemos inmediatamente para mostrar el resultado del auto-calculo
-        self.process_buffer(clean_text)
+            # Extraemos inmediatamente para mostrar el resultado
+            self.process_buffer(clean_text)
 
     def process_buffer(self, text):
         try:
