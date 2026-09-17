@@ -21,6 +21,7 @@ class SerialReaderApp(ctk.CTk):
         
         self.reader = None
         self.buffer = ""
+        self.raw_log_buffer = ""
         
         # Grid layout
         self.grid_columnconfigure(1, weight=1)
@@ -156,6 +157,7 @@ class SerialReaderApp(ctk.CTk):
         self.console.configure(state="disabled")
         self.extracted_value_label.configure(text="--")
         self.buffer = ""
+        self.raw_log_buffer = ""
 
     def get_ports(self):
         ports = [p.device for p in serial.tools.list_ports.comports()]
@@ -271,8 +273,7 @@ class SerialReaderApp(ctk.CTk):
             pass
 
     def on_data_received(self, char_val, bit):
-        # We don't log byte-by-byte to prevent UI lag on continuous streams
-        
+        self.raw_log_buffer += f"=>>[{char_val}|{bit}]\n"
         try:
             start_char_ascii = int(self.char_start_ascii.get())
         except ValueError:
@@ -293,12 +294,18 @@ class SerialReaderApp(ctk.CTk):
             
         # Check expected length
         if expected_length > 0 and len(self.buffer) == expected_length:
+            if self.raw_log_buffer:
+                self.after(0, self.log, self.raw_log_buffer.strip())
+                self.raw_log_buffer = ""
             self.after(0, self.log, f"Trama recibida: {self.buffer}")
             self.after(0, self.process_buffer, self.buffer)
             self.buffer = ""
             
         # Fallback: Process on newline
         elif bit == 10 or bit == 13:
+            if self.raw_log_buffer:
+                self.after(0, self.log, self.raw_log_buffer.strip())
+                self.raw_log_buffer = ""
             if len(self.buffer.strip()) > 0:
                 self.after(0, self.log, f"Trama recibida: {self.buffer}")
                 # Auto-calculate if fields empty
