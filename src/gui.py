@@ -96,7 +96,7 @@ class SerialReaderApp(ctk.CTk):
         self.extraction_frame.grid(row=0, column=0, pady=(0, 15), sticky="ew")
         self.extraction_frame.grid_columnconfigure(2, weight=1)
         
-                controls_frame = ctk.CTkFrame(self.extraction_frame, fg_color="transparent")
+        controls_frame = ctk.CTkFrame(self.extraction_frame, fg_color="transparent")
         controls_frame.grid(row=0, column=0, padx=15, pady=10, sticky="w")
         
         ctk.CTkLabel(controls_frame, text="Char Inicio (ASCII):").grid(row=0, column=0, sticky="w", padx=5)
@@ -241,7 +241,7 @@ class SerialReaderApp(ctk.CTk):
         import re
         match = re.search(r'[-+]?\s*\d+\.?\d*\s*[a-zA-Z]*', clean_text)
         if match:
-                        self.char_start_ascii.delete(0, "end")
+            self.char_start_ascii.delete(0, "end")
             self.char_start_ascii.insert(0, str(start_ascii))
             
             # Leave length blank to use newline as terminator
