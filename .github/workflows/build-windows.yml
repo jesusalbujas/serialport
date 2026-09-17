@@ -31,16 +31,16 @@ jobs:
 
     - name: Build Executable
       run: |
-        pyinstaller --noconfirm --onefile --windowed --collect-all customtkinter --name serialport_gui src/gui.py
+        pyinstaller --noconfirm --onefile --windowed --collect-all customtkinter --name serialport_gui_v${{ github.run_number }} src/gui.py
 
     - name: Upload Artifact to Workflow
       uses: actions/upload-artifact@v4
       with:
-        name: serialport_gui.exe
-        path: dist/serialport_gui.exe
+        name: serialport_gui_v${{ github.run_number }}.exe
+        path: dist/serialport_gui_v${{ github.run_number }}.exe
 
     - name: Upload Executable to GitHub Release
       if: github.event_name == 'release'
       uses: softprops/action-gh-release@v2
       with:
-        files: dist/serialport_gui.exe
+        files: dist/serialport_gui_v${{ github.run_number }}.exe
