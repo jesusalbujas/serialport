@@ -264,7 +264,7 @@ class SerialReaderApp(ctk.CTk):
             end_idx = int(self.cut_end.get())
             
             # Cut using indices and format cleanly
-            if len(text) >= end_idx:
+            if len(text) > start_idx:
                 # Extraemos y condensamos los espacios múltiples en uno solo
                 raw_val = text[start_idx:end_idx]
                 value = " ".join(raw_val.split())
