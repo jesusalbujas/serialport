@@ -239,7 +239,7 @@ class SerialReaderApp(ctk.CTk):
             
         # 3. Find number boundaries
         import re
-        match = re.search(r'[-+]?\s*\d+\.?\d*', clean_text)
+        match = re.search(r'[-+]?\s*\d+\.?\d*\s*[a-zA-Z]*', clean_text)
         if match:
                         self.char_start_ascii.delete(0, "end")
             self.char_start_ascii.insert(0, str(start_ascii))
@@ -261,9 +261,11 @@ class SerialReaderApp(ctk.CTk):
             start_idx = int(self.cut_start.get())
             end_idx = int(self.cut_end.get())
             
-            # Cut using indices
+            # Cut using indices and format cleanly
             if len(text) >= end_idx:
-                value = text[start_idx:end_idx].replace(" ", "")
+                # Extraemos y condensamos los espacios múltiples en uno solo
+                raw_val = text[start_idx:end_idx]
+                value = " ".join(raw_val.split())
                 self.extracted_value_label.configure(text=value)
         except ValueError:
             pass
