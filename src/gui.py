@@ -100,21 +100,28 @@ class SerialReaderApp(ctk.CTk):
         controls_frame = ctk.CTkFrame(self.extraction_frame, fg_color="transparent")
         controls_frame.grid(row=0, column=0, padx=15, pady=10, sticky="w")
         
-        ctk.CTkLabel(controls_frame, text="Char Inicio (ASCII):").grid(row=0, column=0, sticky="w", padx=5)
-        self.char_start_ascii = ctk.CTkEntry(controls_frame, width=50)
-        self.char_start_ascii.grid(row=0, column=1, padx=5)
+        # Fila 0: Inicio
+        ctk.CTkLabel(controls_frame, text="Caracter Inicio (ASCII):").grid(row=0, column=0, sticky="w", padx=5, pady=3)
+        self.char_start_ascii = ctk.CTkEntry(controls_frame, width=55)
+        self.char_start_ascii.grid(row=0, column=1, padx=5, pady=3)
         
-        ctk.CTkLabel(controls_frame, text="Longitud Trama:").grid(row=1, column=0, sticky="w", padx=5, pady=5)
-        self.frame_length = ctk.CTkEntry(controls_frame, width=50)
-        self.frame_length.grid(row=1, column=1, padx=5, pady=5)
+        ctk.CTkLabel(controls_frame, text="Corte Inicio (Pos):").grid(row=0, column=2, sticky="w", padx=(15, 5), pady=3)
+        self.cut_start = ctk.CTkEntry(controls_frame, width=55)
+        self.cut_start.grid(row=0, column=3, padx=5, pady=3)
         
-        ctk.CTkLabel(controls_frame, text="Corte Inicio (Pos):").grid(row=0, column=2, sticky="w", padx=(15, 5))
-        self.cut_start = ctk.CTkEntry(controls_frame, width=50)
-        self.cut_start.grid(row=0, column=3, padx=5)
+        # Fila 1: Fin
+        ctk.CTkLabel(controls_frame, text="Caracter Fin (ASCII):").grid(row=1, column=0, sticky="w", padx=5, pady=3)
+        self.char_end_ascii = ctk.CTkEntry(controls_frame, width=55)
+        self.char_end_ascii.grid(row=1, column=1, padx=5, pady=3)
         
-        ctk.CTkLabel(controls_frame, text="Corte Fin (Pos):").grid(row=1, column=2, sticky="w", padx=(15, 5), pady=5)
-        self.cut_end = ctk.CTkEntry(controls_frame, width=50)
-        self.cut_end.grid(row=1, column=3, padx=5, pady=5)
+        ctk.CTkLabel(controls_frame, text="Corte Fin (Pos):").grid(row=1, column=2, sticky="w", padx=(15, 5), pady=3)
+        self.cut_end = ctk.CTkEntry(controls_frame, width=55)
+        self.cut_end.grid(row=1, column=3, padx=5, pady=3)
+        
+        # Fila 2: Longitud
+        ctk.CTkLabel(controls_frame, text="Longitud Trama:").grid(row=2, column=0, sticky="w", padx=5, pady=3)
+        self.frame_length = ctk.CTkEntry(controls_frame, width=55)
+        self.frame_length.grid(row=2, column=1, padx=5, pady=3)
         
         # Display large extracted value
         right_frame = ctk.CTkFrame(self.extraction_frame, fg_color="transparent")
@@ -225,7 +232,7 @@ class SerialReaderApp(ctk.CTk):
         except Exception as e:
             messagebox.showerror("Error de Conexión", str(e))
 
-    def auto_fill_config(self, text):
+    def auto_fill_config(self, text, end_bit=None):
         # Clean newlines
         clean_text = text.replace('\r', '').replace('\n', '')
         
@@ -238,6 +245,18 @@ class SerialReaderApp(ctk.CTk):
         # Ignore non-alphanumeric chars
         if not (65 <= start_ascii <= 90 or 97 <= start_ascii <= 122 or 48 <= start_ascii <= 57):
             return
+
+        # Caracter de fin detectado
+        if end_bit is not None and end_bit in (10, 13):
+            end_ascii = end_bit
+        elif '\r' in text:
+            end_ascii = 13
+        elif '\n' in text:
+            end_ascii = 10
+        elif len(text) > 0:
+            end_ascii = ord(text[-1])
+        else:
+            end_ascii = 13
             
         # 3. Find number boundaries
         import re
@@ -245,9 +264,19 @@ class SerialReaderApp(ctk.CTk):
         if match:
             self.char_start_ascii.delete(0, "end")
             self.char_start_ascii.insert(0, str(start_ascii))
+
+            self.char_end_ascii.delete(0, "end")
+            self.char_end_ascii.insert(0, str(end_ascii))
             
-            # Leave length blank to use newline as terminator
+            # Longitud total real de la trama (hasta el caracter de fin)
+            if '\r' in text or '\n' in text:
+                end_pos = text.find('\r') if '\r' in text else text.find('\n')
+                total_len = end_pos + 1
+            else:
+                total_len = len(clean_text)
+                
             self.frame_length.delete(0, "end")
+            self.frame_length.insert(0, str(total_len))
             
             self.cut_start.delete(0, "end")
             self.cut_start.insert(0, str(match.start()))
@@ -278,6 +307,11 @@ class SerialReaderApp(ctk.CTk):
             start_char_ascii = int(self.char_start_ascii.get())
         except ValueError:
             start_char_ascii = -1
+
+        try:
+            end_char_ascii = int(self.char_end_ascii.get())
+        except (ValueError, AttributeError):
+            end_char_ascii = -1
             
         try:
             expected_length = int(self.frame_length.get())
@@ -301,16 +335,16 @@ class SerialReaderApp(ctk.CTk):
             self.after(0, self.process_buffer, self.buffer)
             self.buffer = ""
             
-        # Fallback: Process on newline
-        elif bit == 10 or bit == 13:
+        # Fallback: Process on end character or newline
+        elif (end_char_ascii != -1 and bit == end_char_ascii) or bit == 10 or bit == 13:
             if self.raw_log_buffer:
                 self.after(0, self.log, self.raw_log_buffer.strip())
                 self.raw_log_buffer = ""
             if len(self.buffer.strip()) > 0:
                 self.after(0, self.log, f"Trama recibida: {self.buffer}")
                 # Auto-calculate if fields empty
-                if self.char_start_ascii.get() == "" and self.frame_length.get() == "":
-                    self.after(0, self.auto_fill_config, self.buffer)
+                if self.char_start_ascii.get() == "" or self.frame_length.get() == "":
+                    self.after(0, self.auto_fill_config, self.buffer, bit)
                 else:
                     self.after(0, self.process_buffer, self.buffer)
             self.buffer = ""
