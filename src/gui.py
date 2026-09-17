@@ -271,7 +271,7 @@ class SerialReaderApp(ctk.CTk):
             pass
 
     def on_data_received(self, char_val, bit):
-        self.after(0, self.log, f"=>>[{char_val}|{bit}]")
+        # We don't log byte-by-byte to prevent UI lag on continuous streams
         
         try:
             start_char_ascii = int(self.char_start_ascii.get())
@@ -293,12 +293,14 @@ class SerialReaderApp(ctk.CTk):
             
         # Check expected length
         if expected_length > 0 and len(self.buffer) == expected_length:
+            self.after(0, self.log, f"Trama recibida: {self.buffer}")
             self.after(0, self.process_buffer, self.buffer)
             self.buffer = ""
             
         # Fallback: Process on newline
         elif bit == 10 or bit == 13:
             if len(self.buffer.strip()) > 0:
+                self.after(0, self.log, f"Trama recibida: {self.buffer}")
                 # Auto-calculate if fields empty
                 if self.char_start_ascii.get() == "" and self.frame_length.get() == "":
                     self.after(0, self.auto_fill_config, self.buffer)

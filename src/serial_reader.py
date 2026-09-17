@@ -51,16 +51,16 @@ class SerialReader:
         while self.is_reading:
             try:
                 if self.serial_port.in_waiting > 0:
-                    # Delay to ensure data buffering, matching original Java behavior
-                    time.sleep(0.2)
-                    while self.serial_port.in_waiting > 0 and self.is_reading:
-                        data = self.serial_port.read(1)
-                        if data:
-                            bit = data[0]
-                            char_val = chr(bit) if 32 <= bit <= 126 else chr(bit)
-                            on_data(char_val, bit)
+                    chunk = self.serial_port.read(self.serial_port.in_waiting)
+                    for data_byte in chunk:
+                        char_val = chr(data_byte) if 32 <= data_byte <= 126 else chr(data_byte)
+                        on_data(char_val, data_byte)
                 else:
-                    time.sleep(0.1)
+                    data = self.serial_port.read(1)
+                    if data:
+                        data_byte = data[0]
+                        char_val = chr(data_byte) if 32 <= data_byte <= 126 else chr(data_byte)
+                        on_data(char_val, data_byte)
             except Exception as e:
                 if self.is_reading:
                     on_error(str(e))
