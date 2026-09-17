@@ -8,7 +8,6 @@ import base64
 from io import BytesIO
 from PIL import Image
 
-# Configuracion de apariencia moderna
 ctk.set_appearance_mode("Dark")
 ctk.set_default_color_theme("blue")
 
@@ -92,13 +91,12 @@ class SerialReaderApp(ctk.CTk):
         self.main_view.grid_rowconfigure(3, weight=1) # El textbox ocupa el resto
         self.main_view.grid_columnconfigure(0, weight=1)
         
-        # Panel Superior: Extracción de datos
+        # Top Panel: Data extraction
         self.extraction_frame = ctk.CTkFrame(self.main_view, height=120)
         self.extraction_frame.grid(row=0, column=0, pady=(0, 15), sticky="ew")
         self.extraction_frame.grid_columnconfigure(2, weight=1)
         
-        # Controles de extracción (Estilo Adempiere)
-        controls_frame = ctk.CTkFrame(self.extraction_frame, fg_color="transparent")
+                controls_frame = ctk.CTkFrame(self.extraction_frame, fg_color="transparent")
         controls_frame.grid(row=0, column=0, padx=15, pady=10, sticky="w")
         
         ctk.CTkLabel(controls_frame, text="Char Inicio (ASCII):").grid(row=0, column=0, sticky="w", padx=5)
@@ -117,7 +115,7 @@ class SerialReaderApp(ctk.CTk):
         self.cut_end = ctk.CTkEntry(controls_frame, width=50)
         self.cut_end.grid(row=1, column=3, padx=5, pady=5)
         
-        # Mostrar valor extraído grande
+        # Display large extracted value
         right_frame = ctk.CTkFrame(self.extraction_frame, fg_color="transparent")
         right_frame.grid(row=0, column=2, padx=20, pady=10, sticky="e")
         
@@ -125,7 +123,7 @@ class SerialReaderApp(ctk.CTk):
         self.extracted_value_label = ctk.CTkLabel(right_frame, text="--", font=ctk.CTkFont(size=120, weight="bold"), text_color="#F1C40F")
         self.extracted_value_label.pack()
         
-        # Panel Medio: Configuraciones extra (Paridad, Flujo)
+        # Middle Panel: Extra Settings
         self.top_settings = ctk.CTkFrame(self.main_view, height=50)
         self.top_settings.grid(row=1, column=0, pady=(0, 15), sticky="ew")
         
@@ -139,7 +137,7 @@ class SerialReaderApp(ctk.CTk):
         self.flow_cb.set("RTSCTS IN")
         self.flow_cb.pack(side="left", padx=5, pady=10)
         
-        # Header Consola
+        # Console Header
         self.console_header = ctk.CTkFrame(self.main_view, fg_color="transparent")
         self.console_header.grid(row=2, column=0, sticky="ew", pady=(10, 5))
         ctk.CTkLabel(self.console_header, text="Log de Datos:", font=ctk.CTkFont(weight="bold")).pack(side="left", padx=5)
@@ -226,28 +224,27 @@ class SerialReaderApp(ctk.CTk):
             messagebox.showerror("Error de Conexión", str(e))
 
     def auto_fill_config(self, text):
-        # Limpiamos saltos de linea para no contarlos en la trama util
+        # Clean newlines
         clean_text = text.replace('\r', '').replace('\n', '')
         
-        # 1. Ignorar tramas muy cortas (probablemente basura de conexion)
+        # 1. Ignore short frames
         if len(clean_text) < 8:
             return
             
-        # 2. Caracter de inicio
+        # 2. Start character
         start_ascii = ord(clean_text[0])
-        # Si el primer caracter no es una letra normal o numero, es basura. Ignoramos.
+        # Ignore non-alphanumeric chars
         if not (65 <= start_ascii <= 90 or 97 <= start_ascii <= 122 or 48 <= start_ascii <= 57):
             return
             
-        # 3. Buscar la posicion de los numeros (Corte inicio y fin)
+        # 3. Find number boundaries
         import re
         match = re.search(r'[-+]?\s*\d+\.?\d*', clean_text)
         if match:
-            # Si encontramos un peso válido, rellenamos la interfaz
-            self.char_start_ascii.delete(0, "end")
+                        self.char_start_ascii.delete(0, "end")
             self.char_start_ascii.insert(0, str(start_ascii))
             
-            # Dejamos la longitud en blanco, es más inteligente dejar que \n corte la trama
+            # Leave length blank to use newline as terminator
             self.frame_length.delete(0, "end")
             
             self.cut_start.delete(0, "end")
@@ -256,7 +253,7 @@ class SerialReaderApp(ctk.CTk):
             self.cut_end.delete(0, "end")
             self.cut_end.insert(0, str(match.end()))
             
-            # Extraemos inmediatamente para mostrar el resultado
+            # Process buffer immediately
             self.process_buffer(clean_text)
 
     def process_buffer(self, text):
@@ -264,7 +261,7 @@ class SerialReaderApp(ctk.CTk):
             start_idx = int(self.cut_start.get())
             end_idx = int(self.cut_end.get())
             
-            # Cortamos directamente usando los índices de Adempiere
+            # Cut using indices
             if len(text) >= end_idx:
                 value = text[start_idx:end_idx].replace(" ", "")
                 self.extracted_value_label.configure(text=value)
@@ -284,23 +281,23 @@ class SerialReaderApp(ctk.CTk):
         except ValueError:
             expected_length = 0
             
-        # Lógica de tramas Adempiere: reiniciar el buffer solo si está vacío
+        # Reset buffer if empty
         if len(self.buffer) == 0 and start_char_ascii != -1:
             if bit == start_char_ascii:
                 self.buffer = char_val
-            return # Si el buffer está vacío y no es el caracter de inicio, lo ignoramos
+            return # Ignore if empty and not start char
             
         self.buffer += char_val
             
-        # Evaluar si la trama alcanzó la longitud deseada
+        # Check expected length
         if expected_length > 0 and len(self.buffer) == expected_length:
             self.after(0, self.process_buffer, self.buffer)
             self.buffer = ""
             
-        # Respaldo: Si llega salto de línea, procesamos lo que tengamos y limpiamos
+        # Fallback: Process on newline
         elif bit == 10 or bit == 13:
             if len(self.buffer.strip()) > 0:
-                # Si los campos están vacios, autocalcular magia!
+                # Auto-calculate if fields empty
                 if self.char_start_ascii.get() == "" and self.frame_length.get() == "":
                     self.after(0, self.auto_fill_config, self.buffer)
                 else:
